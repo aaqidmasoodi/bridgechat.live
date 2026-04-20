@@ -617,16 +617,6 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-.received {
-    align-self: flex-start;
-    background: white;
-    border-top-left-radius: 5px;
-}
-
-.received .original-text {
-    display: none;
-}
-
 .sent {
     align-self: flex-end;
     background: #4ecdc4;
@@ -634,22 +624,17 @@ body {
     border-top-right-radius: 5px;
 }
 
-.sent .translated-text {
-    display: none;
-}
-
-.original-text {
+.message-content {
     font-weight: 500;
-    margin-bottom: 5px;
 }
 
-.translated-text {
+.message-alt {
     font-size: 14px;
     opacity: 0.9;
     font-style: italic;
 }
 
-.sent .translated-text {
+.sent .message-alt {
     color: rgba(255, 255, 255, 0.9);
 }
 

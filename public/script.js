@@ -260,11 +260,32 @@ function addMessage(message, translatedMessage, username, isOwn) {
     const now = new Date();
     const timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
     
+    // Default view: sent shows original, received shows translated
+    const defaultText = isOwn ? message : translatedMessage;
+    const altText = isOwn ? translatedMessage : message;
+    
     messageDiv.innerHTML = `
-        <div class="original-text">${message}</div>
-        <div class="translated-text">${translatedMessage}</div>
+        <div class="message-content">${defaultText}</div>
+        <div class="message-alt" style="display:none">${altText}</div>
         <div class="message-time">${timeString}</div>
+        <div class="tap-hint" style="display:none">Tap to translate</div>
     `;
+    
+    // Double-tap/tap to toggle
+    let lastTap = 0;
+    messageDiv.addEventListener('click', (e) => {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        if (tapLength < 300 && tapLength > 0) {
+            // Double tap detected
+            const content = messageDiv.querySelector('.message-content');
+            const alt = messageDiv.querySelector('.message-alt');
+            const temp = content.innerHTML;
+            content.innerHTML = alt.innerHTML;
+            alt.innerHTML = temp;
+        }
+        lastTap = currentTime;
+    });
     
     messagesContainer.appendChild(messageDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
