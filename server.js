@@ -131,7 +131,7 @@ async function translateText(text, sourceLang, targetLang) {
     const targetLangName = languageMap[targetLang] || 'Arabic';
     
     // Create prompt for translation
-    const prompt = `Translate the following text from ${sourceLangName} to ${targetLangName}. Only provide the translation, nothing else:\n\n"${text}"`;
+    const prompt = `Translate this casual chat message from ${sourceLangName} to ${targetLangName}. Give a natural, conversational translation without quotes or extra explanation:\n${text}`;
     
     console.log(`Translating: ${text} from ${sourceLangName} to ${targetLangName}`);
     
@@ -156,8 +156,9 @@ async function translateText(text, sourceLang, targetLang) {
       }
     });
     
-    // Extract translated text
-    const translatedText = response.data.choices[0].message.content.trim();
+    // Extract translated text and strip any quotes
+    let translatedText = response.data.choices[0].message.content.trim();
+    translatedText = translatedText.replace(/^["']|["']$/g, '');
     console.log(`Translation result: ${translatedText}`);
     return translatedText;
   } catch (error) {
