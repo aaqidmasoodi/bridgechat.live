@@ -123,7 +123,8 @@ async function translateText(text, sourceLang, targetLang) {
       'fi': 'Finnish',
       'da': 'Danish',
       'no': 'Norwegian',
-      'cs': 'Czech'
+      'cs': 'Czech',
+      'id': 'Indonesian'
     };
     
     const sourceLangName = languageMap[sourceLang] || 'English';
@@ -142,7 +143,7 @@ async function translateText(text, sourceLang, targetLang) {
           content: prompt
         }
       ],
-      model: "llama3-8b-8192",
+      model: "llama-3.1-8b-instant",
       temperature: 0.3,
       max_tokens: 1024,
       top_p: 1,

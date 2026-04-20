@@ -62,7 +62,8 @@ const languageNames = {
     'fi': 'Finnish',
     'da': 'Danish',
     'no': 'Norwegian',
-    'cs': 'Czech'
+    'cs': 'Czech',
+    'id': 'Indonesian'
 };
 
 // Set default values (English to Arabic)
@@ -332,6 +333,7 @@ socket.on('joined-room', (data) => {
         // Show chat interface
         roomContainer.style.display = 'none';
         chatContainer.style.display = 'flex';
+        document.body.classList.add('chat-active');
     }
 });
 
@@ -352,6 +354,7 @@ socket.on('user-joined', (data) => {
     setTimeout(() => {
         roomContainer.style.display = 'none';
         chatContainer.style.display = 'flex';
+        document.body.classList.add('chat-active');
     }, 1500);
 });
 
@@ -428,6 +431,7 @@ window.addEventListener('DOMContentLoaded', () => {
         joinRoomContainer.style.display = 'none';
         roomContainer.style.display = 'none';
         chatContainer.style.display = 'none';
+        document.body.classList.remove('chat-active');
         isJoiningRoom = false;
     }
 });
