@@ -263,7 +263,7 @@ function addMessage(message, translatedMessage, username, isOwn) {
     messageDiv.innerHTML = `
         <div class="original-text">${message}</div>
         <div class="translated-text">${translatedMessage}</div>
-        <div class="message-time">${timeString} ${isOwn ? '' : '(' + username + ')'}</div>
+        <div class="message-time">${timeString}</div>
     `;
     
     messagesContainer.appendChild(messageDiv);
