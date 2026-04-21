@@ -346,15 +346,25 @@ socket.on('room-created', (data) => {
 socket.on('joined-room', (data) => {
     currentRoomId = data.roomId;
     
+    // Update room link to show actual room URL
+    const actualUrl = window.location.origin + '/room/' + currentRoomId;
+    roomLink.textContent = actualUrl;
+    roomCodeDisplay.textContent = currentRoomId.toLowerCase();
+    
     if (data.otherUser) {
         partnerName.textContent = data.otherUser.username;
         partnerLanguage = data.otherUser.language;
         translationLang.textContent = languageNames[partnerLanguage] || partnerLanguage;
         
-        // Show chat interface
+        // Show chat interface immediately when partner is present
         roomContainer.style.display = 'none';
         chatContainer.style.display = 'flex';
         document.body.classList.add('chat-active');
+    } else {
+        // No other user yet - show room container with link so creator can share
+        roomContainer.style.display = 'block';
+        chatContainer.style.display = 'none';
+        startTimer();
     }
 });
 
@@ -417,12 +427,31 @@ socket.on('error', (data) => {
 socket.on('room-info', (data) => {
     if (data.creatorLanguage && data.partnerLanguage) {
         console.log('Received room info:', data);
-        // Auto-select languages based on room info
-        userLanguageSelect.value = data.partnerLanguage;
-        userLanguage = data.partnerLanguage;
-        partnerLanguageSelect.value = data.creatorLanguage;
-        partnerLanguage = data.creatorLanguage;
-        translationLang.textContent = languageNames[data.creatorLanguage] || data.creatorLanguage;
+        
+        if (data.isCreatorRejoining) {
+            // This is the creator coming back to their own room
+            // Swap languages so creator's language is correct
+            userLanguage = data.partnerLanguage;
+            partnerLanguage = data.creatorLanguage;
+            userLanguageSelect.value = data.partnerLanguage;
+            partnerLanguageSelect.value = data.creatorLanguage;
+            translationLang.textContent = languageNames[data.creatorLanguage] || data.creatorLanguage;
+            
+            // Show "Rejoin Room" instead of "Join Room"
+            isJoiningRoom = true;
+            welcomeContainer.style.display = 'none';
+            setupContainer.style.display = 'block';
+            document.querySelector('.setup-title').textContent = 'Welcome Back!';
+            document.querySelector('.setup-subtitle').textContent = 'Rejoin your room';
+            document.querySelector('.start-btn').innerHTML = '<i class="fas fa-sign-in-alt"></i> Rejoin Room';
+        } else {
+            // Auto-select languages based on room info
+            userLanguageSelect.value = data.partnerLanguage;
+            userLanguage = data.partnerLanguage;
+            partnerLanguageSelect.value = data.creatorLanguage;
+            partnerLanguage = data.creatorLanguage;
+            translationLang.textContent = languageNames[data.creatorLanguage] || data.creatorLanguage;
+        }
     }
 });
 
@@ -432,16 +461,19 @@ window.addEventListener('DOMContentLoaded', () => {
     const roomMatch = path.match(/\/room\/([a-zA-Z0-9]+)/);
     
     if (roomMatch) {
-        // Someone is joining an existing room
+        // Someone is visiting a room URL
         isJoiningRoom = true;
         
-        // Show setup for joiner but with different flow
+        // Show setup container
         welcomeContainer.style.display = 'none';
         setupContainer.style.display = 'block';
         document.querySelector('.setup-title').textContent = 'Join Chat Room';
         document.querySelector('.start-btn').innerHTML = '<i class="fas fa-sign-in-alt"></i> Join Room';
         
-        // Request room info to get language preferences
+        // Reset subtitle to default
+        document.querySelector('.setup-subtitle').textContent = 'Enter your details to join';
+        
+        // Request room info to get language preferences and check if creator rejoining
         socket.emit('get-room-info', {
             roomId: roomMatch[1]
         });

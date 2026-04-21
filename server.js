@@ -184,6 +184,8 @@ io.on('connection', (socket) => {
     // Create room with creator as first participant
     rooms.set(roomId, {
       id: roomId,
+      creatorSocketId: socket.id,         // Store creator's socket ID for rejoin
+      creatorUsername: username,           // Store creator's username
       participants: [{
         id: socket.id,
         username: username,
@@ -193,13 +195,7 @@ io.on('connection', (socket) => {
       creatorLanguage: userLanguage,      // Store creator's language
       partnerLanguage: partnerLanguage,    // Store partner's language
       createdAt: new Date(),
-      timeout: setTimeout(() => {
-        // Delete room after timeout if not full
-        if (rooms.has(roomId) && rooms.get(roomId).participants.length < 2) {
-          rooms.delete(roomId);
-          io.to(roomId).emit('room-expired');
-        }
-      }, ROOM_TIMEOUT)
+      timeout: null                       // No timeout when creator is in room
     });
 
     // Join the room
@@ -224,9 +220,12 @@ io.on('connection', (socket) => {
       const room = rooms.get(roomId);
       
       // Send room language info to joiner
+      // Also tell them if they're rejoining their own room
       socket.emit('room-info', {
         creatorLanguage: room.creatorLanguage,
-        partnerLanguage: room.partnerLanguage
+        partnerLanguage: room.partnerLanguage,
+        creatorUsername: room.creatorUsername,
+        isCreatorRejoining: socket.id === room.creatorSocketId
       });
       
       console.log(`Sent room info for room: ${roomId}`);
@@ -247,29 +246,55 @@ io.on('connection', (socket) => {
     
     const room = rooms.get(roomId);
     
-    // Check if room is full
-    if (room.participants.length >= 2) {
+    // Check if this is the creator rejoining their own room
+    const isCreatorRejoining = socket.id === room.creatorSocketId;
+    
+    // Check if room is full (only block if NOT the creator rejoining)
+    if (room.participants.length >= 2 && !isCreatorRejoining) {
       socket.emit('error', { message: 'Room is full' });
       return;
     }
     
-    // Clear timeout since room is now full
-    clearTimeout(room.timeout);
+    // Clear any pending timeout
+    if (room.timeout) {
+      clearTimeout(room.timeout);
+      room.timeout = null;
+    }
     
-    // Add participant to room (use the language they specified)
-    room.participants.push({
-      id: socket.id,
-      username: username,
-      language: language,
-      joinedAt: new Date()
-    });
+    // If creator is rejoining, update their socket ID
+    if (isCreatorRejoining) {
+      room.creatorSocketId = socket.id;
+      
+      // Update creator's entry in participants if exists
+      const creatorParticipant = room.participants.find(p => p.username === room.creatorUsername);
+      if (creatorParticipant) {
+        creatorParticipant.id = socket.id;
+        creatorParticipant.joinedAt = new Date();
+      } else {
+        // Add creator back to participants if they were removed
+        room.participants.push({
+          id: socket.id,
+          username: username,
+          language: language,
+          joinedAt: new Date()
+        });
+      }
+    } else {
+      // Add new participant to room
+      room.participants.push({
+        id: socket.id,
+        username: username,
+        language: language,
+        joinedAt: new Date()
+      });
+    }
     
-    // Join the room
+    // Join the socket room
     socket.join(roomId);
     
-    // Notify other participant
+    // Notify other participant (only for new joiners, not for creator rejoining)
     const otherParticipant = room.participants.find(p => p.id !== socket.id);
-    if (otherParticipant) {
+    if (otherParticipant && !isCreatorRejoining) {
       io.to(otherParticipant.id).emit('user-joined', {
         username: username,
         language: language
@@ -390,10 +415,16 @@ io.on('connection', (socket) => {
             username: participant.username
           });
         }
-        // If room is now empty, delete it
+        // If room is now empty, start a new timeout (don't delete yet)
+        // This gives users 5 minutes to reconnect if they accidentally disconnected
         else {
           clearTimeout(room.timeout);
-          rooms.delete(roomId);
+          room.timeout = setTimeout(() => {
+            if (rooms.has(roomId) && rooms.get(roomId).participants.length === 0) {
+              rooms.delete(roomId);
+              console.log(`Room ${roomId} deleted after being empty for 5 minutes`);
+            }
+          }, ROOM_TIMEOUT);
         }
         
         console.log(`User ${participant.username} left room: ${roomId}`);

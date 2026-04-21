@@ -624,6 +624,14 @@ body {
     border-top-right-radius: 5px;
 }
 
+.received {
+    align-self: flex-start;
+    background: white;
+    border-top-left-radius: 5px;
+    color: #333;
+    border: 1px solid #e0e0e0;
+}
+
 .message-content {
     font-weight: 500;
 }
@@ -640,9 +648,16 @@ body {
 
 .message-time {
     font-size: 11px;
-    text-align: right;
     margin-top: 6px;
     opacity: 0.7;
+}
+
+.sent .message-time {
+    text-align: right;
+}
+
+.received .message-time {
+    text-align: left;
 }
 
 .message-input-area {
